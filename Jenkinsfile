@@ -1,42 +1,39 @@
-pipeline {  
-agent any  
+pipeline {
+    agent any
 
-environment {  
-    DOCKER_CREDENTIAL_ID = 'dockerhub-credentials' // Jenkins credentials id  
-    DOCKER_IMAGE = 'mangaldhruv83/simple-node-app:latest'  
-    GIT_REPO_URL = 'https://github.com/21bcon607/simple-node-app.git'  
-}  
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creation')
+        DOCKERHUB_USERNAME = "${DOCKERHUB_CREDENTIALS_USR}"
+        IMAGE_NAME = 'simple-node-app'
+    }
 
-stages {  
-     
+    stages {
+        stage('Build Docker Image') {
+            steps {
+                bat "docker build -t %DOCKERHUB_USERNAME%/%IMAGE_NAME%:latest ."
+            }
+        }
 
-    stage('Build Docker Image') {  
-        steps {  
-            // Build the Docker image  
-            script {  
-                docker.build("${DOCKER_IMAGE}")  
-            }  
-        }  
-    }  
+        stage('Login to Docker Hub') {
+            steps {
+                bat "echo %DOCKERHUB_CREDENTIALS_PSW% | docker login -u %DOCKERHUB_USERNAME% --password-stdin"
+            }
+        }
 
-    stage('Push Docker Image') {  
-        steps {  
-            // Login to Docker Hub  
-            withCredentials([usernamePassword(credentialsId: "${DOCKER_CREDENTIAL_ID}", usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {  
-                bat "echo %DOCKER_PASSWORD% | docker login -u %DOCKER_USERNAME% --password-stdin"  
-            }  
-            // Push the Docker image to Docker Hub  
-            bat "docker push %DOCKER_IMAGE%"  
-        }  
-    }  
-}  
+        stage('Push Docker Image') {
+            steps {
+                bat "docker push %DOCKERHUB_USERNAME%/%IMAGE_NAME%:latest"
+            }
+        }
+    }
 
-post {  
-    success {  
-        echo 'Pipeline completed successfully!'  
-    }  
-    failure {  
-        echo 'Pipeline failed!'  
-    }  
-}  
+    post {
+        success {
+            echo ' Docker image built and pushed successfully!'
+        }
+        failure {
+            echo ' Pipeline failed.'
+        }
+    }
 }
+
