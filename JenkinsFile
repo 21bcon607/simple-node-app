@@ -2,42 +2,45 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creation')
-        IMAGE_NAME = 'simple-node-app'  // Your Docker Hub repo name
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creation') // Jenkins credentials ID for Docker Hub
+        DOCKERHUB_USERNAME = "${DOCKERHUB_CREDENTIALS_USR}"       // Username from credentials
+        IMAGE_NAME = 'simple-node-app'                             // Docker image name
+        REPOSITORY_URL = 'https://github.com/21bcon607/simple-node-app.git' // GitHub repo URL
+        BRANCH_NAME = 'main'                                        // GitHub branch
     }
 
     stages {
-        stage('Clone Repository') {
+        stage('Pull Latest Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/21bcon607/simple-node-app.git'
+                git branch: "${BRANCH_NAME}", url: "${REPOSITORY_URL}"
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                bat "docker build -t %IMAGE_NAME% ."
+                sh "docker build -t ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest ."
             }
         }
 
         stage('Login to Docker Hub') {
             steps {
-                bat "echo %DOCKERHUB_CREDENTIALS_PSW% | docker login -u %DOCKERHUB_CREDENTIALS_USR% --password-stdin"
+                sh "echo ${DOCKERHUB_CREDENTIALS_PSW} | docker login -u ${DOCKERHUB_USERNAME} --password-stdin"
             }
         }
 
-        stage('Push Image to Docker Hub') {
+        stage('Push Docker Image') {
             steps {
-                bat "docker push %IMAGE_NAME%"
+                sh "docker push ${DOCKERHUB_USERNAME}/${IMAGE_NAME}:latest"
             }
         }
     }
 
     post {
         success {
-            echo 'Docker image built and pushed successfully!'
+            echo '✅ Docker image built and pushed to Docker Hub successfully!'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo '❌ Pipeline failed during execution.'
         }
     }
 }
