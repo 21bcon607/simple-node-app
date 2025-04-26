@@ -8,12 +8,7 @@ environment {
 }  
 
 stages {  
-    stage('Checkout') {  
-        steps {  
-            // Clone the Git repository  
-            git branch: 'master', url: "${GIT_REPO_URL}"  
-        }  
-    }  
+     
 
     stage('Build Docker Image') {  
         steps {  
